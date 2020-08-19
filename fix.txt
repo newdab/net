@@ -1,0 +1,51 @@
+public FileResult DownloadZipFile()  
+        {  
+  
+            var fileName = string.Format("{0}_ImageFiles.zip", DateTime.Today.Date.ToString("dd-MM-yyyy") + "_1");  
+            var tempOutPutPath = Server.MapPath(Url.Content("/TempImages/")) + fileName;  
+  
+            using (ZipOutputStream s = new ZipOutputStream(System.IO.File.Create(tempOutPutPath)))  
+            {  
+                s.SetLevel(9); // 0-9, 9 being the highest compression  
+  
+                byte[] buffer = new byte[4096];  
+  
+                var ImageList = new List<string>();  
+  
+                ImageList.Add(Server.MapPath("/Images/01.jpg"));  
+                ImageList.Add(Server.MapPath("/Images/02.jpg"));  
+  
+  
+                for (int i = 0; i < ImageList.Count; i++)  
+                {  
+                    ZipEntry entry = new ZipEntry(Path.GetFileName(ImageList[i]));  
+                    entry.DateTime = DateTime.Now;  
+                    entry.IsUnicodeText = true;  
+                    s.PutNextEntry(entry);  
+  
+                    using (FileStream fs = System.IO.File.OpenRead(ImageList[i]))  
+                    {  
+                        int sourceBytes;  
+                        do  
+                        {  
+                            sourceBytes = fs.Read(buffer, 0, buffer.Length);  
+                            s.Write(buffer, 0, sourceBytes);  
+                        } while (sourceBytes > 0);  
+                    }  
+                }  
+                s.Finish();  
+                s.Flush();  
+                s.Close();  
+  
+            }  
+  
+            byte[] finalResult = System.IO.File.ReadAllBytes(tempOutPutPath);  
+            if (System.IO.File.Exists(tempOutPutPath))  
+                System.IO.File.Delete(tempOutPutPath);  
+  
+            if (finalResult == null || !finalResult.Any())  
+                throw new Exception(String.Format("No Files found with Image"));  
+  
+            return File(finalResult, "application/zip", fileName);  
+  
+        }   
